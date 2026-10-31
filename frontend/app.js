@@ -1,5 +1,5 @@
 const configuredApi = new URLSearchParams(window.location.search).get("api");
-const API_BASE = configuredApi || window.localStorage.getItem("ridefare-api") || "";
+const API_BASE = configuredApi || window.localStorage.getItem("ridefare-api") || "http://127.0.0.1:5000";
 const form = document.querySelector("#prediction-form");
 const errorBox = document.querySelector("#error-message");
 const submitButton = document.querySelector("#submit-button");
