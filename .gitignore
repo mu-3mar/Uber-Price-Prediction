@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Local datasets and generated notebooks outputs
+data/raw/
+data/processed/
+
+# Local editor and OS files
+.vscode/
+.DS_Store

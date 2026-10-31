@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#FFF8F5">
+  <title>RideFare — Uber Fare Predictor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="brand-bar">
+      <a class="brand" href="#top" aria-label="RideFare home">
+        <span class="brand-mark"><iframe class="brand-logo-frame" src="./logo-animated.html?color=%23F04B24&amp;v=2" title="Animated brand logo" aria-label="Animated brand logo" tabindex="-1"></iframe></span>
+        <span><strong>RideFare</strong><small>UBER FARE PREDICTOR</small></span>
+      </a>
+      <div class="api-pill"><span class="live-dot"></span><span id="api-status">Checking API…</span></div>
+    </header>
+
+    <section class="intro" id="top">
+      <p class="eyebrow">UBER RIDE DATA · ML REGRESSION DEMO</p>
+      <h1>Estimate your <em>ride fare.</em></h1>
+      <p class="intro-copy">Enter the trip details below and the trained regression model will estimate the fare in USD. The page is static and can be opened on its own; it uses the local API whenever it is available.</p>
+    </section>
+
+    <div class="notice"><span>i</span><p><strong>Estimated price only.</strong> The result is a machine-learning estimate for demonstration and may differ from the final fare.</p></div>
+
+    <form id="prediction-form" novalidate>
+      <section class="form-card">
+        <div class="card-heading"><div><span class="step">01</span><h2>Trip details</h2></div><p>When and how many</p></div>
+        <div class="field-grid">
+          <label class="field"><span>Weather</span><select name="Weather" required><option value="0">Cloudy</option><option value="1">Rainy</option><option value="2">Stormy</option><option value="3">Sunny</option><option value="4">Windy</option></select></label>
+          <label class="field"><span>Passengers</span><input name="passenger_count" type="number" min="1" max="6" step="1" value="1" required><small>Number of passengers</small></label>
+          <label class="field"><span>Pickup date</span><input id="date" type="date" required></label>
+          <label class="field"><span>Pickup time</span><input id="time" type="time" required><small>Converted to hour for the model</small></label>
+          <label class="field"><span>Ride distance</span><input name="distance" type="number" min="0.1" step="0.1" value="3" required><small>Total distance in miles</small></label>
+          <label class="field"><span>Bearing</span><input name="bearing" type="number" min="-180" max="180" step="0.1" value="0" required><small>Direction from pickup to drop-off</small></label>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <div class="card-heading"><div><span class="step">02</span><h2>Pickup & drop-off</h2></div><p>Coordinates</p></div>
+        <div class="field-grid">
+          <label class="field"><span>Pickup longitude</span><input name="pickup_longitude" type="number" step="any" value="-73.985" required></label>
+          <label class="field"><span>Pickup latitude</span><input name="pickup_latitude" type="number" step="any" value="40.748" required></label>
+          <label class="field"><span>Drop-off longitude</span><input name="dropoff_longitude" type="number" step="any" value="-73.977" required></label>
+          <label class="field"><span>Drop-off latitude</span><input name="dropoff_latitude" type="number" step="any" value="40.752" required></label>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <div class="card-heading"><div><span class="step">03</span><h2>Airport distances</h2></div><p>Nearest landmark distances</p></div>
+        <div class="field-grid">
+          <label class="field"><span>JFK distance</span><input name="jfk_dist" type="number" min="0" step="0.1" value="10" required><small>Miles</small></label>
+          <label class="field"><span>EWR distance</span><input name="ewr_dist" type="number" min="0" step="0.1" value="15" required><small>Miles</small></label>
+          <label class="field"><span>LGA distance</span><input name="lga_dist" type="number" min="0" step="0.1" value="8" required><small>Miles</small></label>
+          <label class="field"><span>SOL distance</span><input name="sol_dist" type="number" min="0" step="0.1" value="4" required><small>Miles</small></label>
+          <label class="field"><span>NYC distance</span><input name="nyc_dist" type="number" min="0" step="0.1" value="3" required><small>Miles</small></label>
+        </div>
+      </section>
+
+      <div class="form-actions"><button type="button" class="reset-button" id="randomize-inputs">⤨ Randomize inputs</button><button type="button" class="reset-button" id="reset-form">Reset form</button><span>18 model features · Local API</span><button type="submit" class="primary-button" id="submit-button">Predict fare <span>↗</span></button></div>
+    </form>
+
+    <section class="result-card" id="result-panel" aria-live="polite">
+      <div class="result-top"><span class="result-icon result-symbol">↗</span><div><p class="eyebrow">YOUR RESULT</p><h2 id="result-title">Your estimated fare will appear here.</h2></div></div>
+      <p id="result-summary">Complete the trip details, then select “Predict fare”.</p>
+      <div class="probability-block"><div class="probability-label"><span>Estimated fare</span><strong id="probability-value">—</strong></div><div class="meter"><span id="probability-meter"></span></div><div class="meter-scale"><span>$0</span><span>$50</span><span>$100+</span></div></div>
+      <div class="error-message" id="error-message" role="alert" hidden></div>
+      <p class="result-disclaimer">This estimate is based on the trained project model and is not a guaranteed fare quote.</p>
+    </section>
+    <footer><span class="footer-project">RIDEFARE · UBER FARE PREDICTION</span><span class="footer-credit">Designed & built by <strong>Muhammad Ammar</strong></span></footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
