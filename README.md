@@ -1,68 +1,111 @@
 # RideFare — Uber Fare Prediction
 
-An end-to-end machine-learning regression project that estimates an Uber ride fare from trip details, coordinates, distance and time. The project includes the preprocessing notebooks, several regression experiments, a FastAPI prediction API, and a dependency-free browser interface.
+End-to-end machine-learning project for estimating the fare of an Uber ride
+from trip coordinates, distance, time and weather information. The project
+covers data preparation, exploratory analysis, comparison of regression
+models, model serialization, a FastAPI inference service, Docker deployment
+and a standalone browser interface.
 
-> **Scope:** This is an educational estimate, not an official Uber quote. Results depend on the dataset and trained model and may differ from a real fare.
+> **Important:** This is an educational estimate, not an official Uber quote.
+> The original dataset was privately provided and is not included in this
+> repository. Predictions therefore depend on the trained artifact and may
+> differ from a live commercial fare.
 
-## Project overview
+## What the project does
 
-The model predicts `fare_amount` from 18 features:
+The target is `fare_amount`. The final inference pipeline expects these 18
+features in the exact order used by the notebooks and API:
 
-`Weather`, `pickup_longitude`, `pickup_latitude`, `dropoff_longitude`, `dropoff_latitude`, `passenger_count`, `hour`, `day`, `month`, `weekday`, `year`, `jfk_dist`, `ewr_dist`, `lga_dist`, `sol_dist`, `nyc_dist`, `distance`, and `bearing`.
+```text
+Weather
+pickup_longitude, pickup_latitude
+dropoff_longitude, dropoff_latitude
+passenger_count
+hour, day, month, weekday, year
+jfk_dist, ewr_dist, lga_dist, sol_dist, nyc_dist
+distance, bearing
+```
 
-The feature order is kept identical to the training notebooks and the API. Date and time are collected as user-friendly controls in the frontend and converted into `day`, `month`, `weekday`, `year`, and `hour` before the request is sent.
+The frontend collects a date and time from the user, then converts them into
+`hour`, `day`, `month`, `weekday` and `year` before sending the prediction
+request.
+
+## Model experiments and results
+
+The modeling notebooks use an 80/20 train-test split with
+`random_state=2`. The preprocessing workflow starts with approximately
+500,000 records, removes unused identifier/date columns, drops missing
+values, encodes categorical columns, removes selected outliers, and keeps
+features selected through correlation analysis.
+
+The following values are the outputs recorded in the modeling notebooks:
+
+| Model | Configuration | MAE | MSE | RMSE | R² |
+|---|---|---:|---:|---:|---:|
+| **XGBoost** | `XGBRegressor`, `random_state=42` | **1.0148** | **2.1999** | **1.4832*** | **0.7419** |
+| Polynomial Regression | Degree 3 + Linear Regression | 1.1182 | 2.5434 | 1.5948 | 0.6917 |
+| Random Forest | `n_estimators=100`, `max_depth=5` | 1.3479 | 3.3733 | 1.8367 | 0.5351 |
+| Linear Regression | Linear baseline | 1.3641 | 3.4459 | 1.8563 | 0.5287 |
+| Ridge Regression | `alpha=0.1` | 1.3641 | 3.4459 | 1.8563 | 0.5287 |
+| Decision Tree | `random_state=42` | 1.5540 | 5.1074 | 2.2600 | — |
+
+**Selected model:** XGBoost, because it achieved the lowest recorded MAE and
+MSE and the highest recorded R² among the tested models. The committed
+[`models/model.pkl`](models/model.pkl) is an `XGBRegressor`; the corresponding
+fitted scaler is [`models/scaler.pkl`](models/scaler.pkl).
+
+### How to read the metrics
+
+- **MAE**: average absolute prediction error in fare units; lower is better.
+- **MSE**: squares larger errors more heavily; lower is better.
+- **RMSE**: square root of MSE, in the same unit as the fare; lower is better.
+- **R²**: proportion of target variance explained by the model; higher is
+  generally better.
+
+The `RMSE` shown for XGBoost is the square root of its recorded MSE because the
+notebook did not print RMSE for that experiment. The values above are
+single-split benchmark results, not a production accuracy guarantee. In
+addition, the notebooks currently call the scikit-learn metric functions with
+the prediction array before the target array; rerunning the notebooks after
+correcting that argument order is recommended before using R² as a formal
+reported statistic.
 
 ## Repository structure
 
 ```text
 Uber-Price-Prediction/
 ├── README.md
-├── Dockerfile                           # Docker image definition for the inference API
-├── requirements.txt                    # Full training, notebook and runtime dependencies
-├── requirements-runtime.txt            # Minimal dependencies for the inference/Docker image
+├── Dockerfile
+├── requirements.txt                    # Training, notebook and API dependencies
+├── requirements-runtime.txt            # Minimal inference dependencies
 ├── data/
-│   └── data.md                         # Dataset notes and reference link
+│   └── data.md                         # Dataset availability and reference link
 ├── notebooks/
 │   ├── preprocessing/
-│   │   └── Uber_project.ipynb          # Cleaning, feature engineering and EDA
-│   └── modeling/                       # Regression experiments
+│   │   └── Uber_project.ipynb          # Cleaning, EDA and feature engineering
+│   └── modeling/
 │       ├── Linear Regression.ipynb
-│       ├── Random Forest Regression.ipynb
-│       ├── Decision Tree Regression.ipynb
-│       ├── Polynomial Regression.ipynb
 │       ├── Ridge.ipynb
+│       ├── Polynomial Regression.ipynb
+│       ├── Decision Tree Regression.ipynb
+│       ├── Random Forest Regression.ipynb
 │       └── XGBoost Regressor.ipynb
 ├── src/
 │   ├── __init__.py
-│   └── main.py                         # FastAPI JSON API
+│   └── main.py                         # FastAPI inference API
 ├── models/
-│   ├── model.pkl                       # Trained regression model
-│   └── scaler.pkl                      # Fitted feature scaler
+│   ├── model.pkl                       # Serialized XGBoost model
+│   └── scaler.pkl                      # Fitted StandardScaler
 └── frontend/
-    ├── index.html                      # Independent static frontend
-    ├── app.js                          # Form, API connection and result rendering
-    ├── styles.css                      # Existing visual design and colors
-    └── logo-animated.html              # Project logo animation
+    ├── index.html                      # Static prediction interface
+    ├── app.js                          # Form and API integration
+    ├── styles.css                      # UI styles
+    └── logo-animated.html              # Logo animation
 ```
 
-## Run the frontend independently
+## Run locally
 
-The frontend is static and does not require FastAPI, Streamlit, Node.js or any frontend build tool.
-
-```bash
-cd frontend
-python3 -m http.server 5500
-```
-
-Open <http://127.0.0.1:5500>. The form, randomize button and reset button work without a backend. Prediction requests are sent to `http://127.0.0.1:5000` when the API is available. You can point the page to another API without editing the files:
-
-```text
-http://127.0.0.1:5500/?api=http://localhost:5000
-```
-
-The API status pill shows whether the configured backend can be reached.
-
-## Run the FastAPI API
+### 1. Start the API
 
 From the repository root:
 
@@ -73,60 +116,41 @@ pip install -r requirements.txt
 uvicorn src.main:app --reload --port 5000
 ```
 
-Run the command from the repository root. The API loads the artifacts from `models/`, so the source code, model files and frontend have clear separate responsibilities.
-
-For Docker or any inference-only environment, install the smaller runtime set
-instead:
+The API loads the committed model artifacts from `models/`. For inference-only
+use, install the smaller runtime set:
 
 ```bash
 pip install -r requirements-runtime.txt
 ```
 
-The runtime file intentionally keeps `xgboost`: the committed `model.pkl` is an
-`XGBRegressor` and needs that package when it is loaded.
+### 2. Start the frontend
 
-## Dockerization
-
-The inference API is containerized using the [`Dockerfile`](Dockerfile). The
-image contains only the API source, trained model artifacts and the runtime
-dependencies from [`requirements-runtime.txt`](requirements-runtime.txt), so
-the training and notebook packages are not installed in the production image.
-
-### Docker image
-
-The published image is available on Docker Hub:
-
-**[mu3mar/uber-price-prediction](https://hub.docker.com/r/mu3mar/uber-price-prediction)**
-
-Pull and run the image:
+The frontend is static and needs no Node.js or build step:
 
 ```bash
-docker pull mu3mar/uber-price-prediction:latest
-docker run --rm -p 5000:8000 \
-  --name uber-price-prediction \
-  mu3mar/uber-price-prediction:latest
+cd frontend
+python3 -m http.server 5500
 ```
 
-The API is then available at <http://127.0.0.1:5000>. The container listens on
-port `8000`, which is mapped to port `5000` on the host.
+Open <http://127.0.0.1:5500>. The form, randomize button and reset button work
+independently. When the API is running, predictions are sent to
+`http://127.0.0.1:5000`.
 
-### Build the image locally
+To use another API origin without editing source files:
 
-From the repository root:
-
-```bash
-docker build -t mu3mar/uber-price-prediction:latest .
-docker run --rm -p 5000:8000 \
-  --name uber-price-prediction \
-  mu3mar/uber-price-prediction:latest
+```text
+http://127.0.0.1:5500/?api=http://localhost:5000
 ```
 
-### API endpoints
+The status indicator in the interface reports whether the configured backend
+is reachable.
 
-| Method | Path | Purpose |
+## API reference
+
+| Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/` | API liveness response |
-| `POST` | `/predict` | Return the estimated fare |
+| `GET` | `/` | Liveness response |
+| `POST` | `/predict` | Returns the estimated fare |
 
 Example request:
 
@@ -136,26 +160,60 @@ curl -X POST http://127.0.0.1:5000/predict \
   -d '{"features":{"Weather":3,"pickup_longitude":-73.985,"pickup_latitude":40.748,"dropoff_longitude":-73.977,"dropoff_latitude":40.752,"passenger_count":1,"hour":14,"day":15,"month":6,"weekday":5,"year":2015,"jfk_dist":10,"ewr_dist":15,"lga_dist":8,"sol_dist":4,"nyc_dist":3,"distance":3,"bearing":0}}'
 ```
 
-Response:
+Example response:
 
 ```json
 {"prediction": 12.34}
 ```
 
-The API accepts JSON from the independent frontend and keeps the original form-value flow compatible. Missing or incorrectly sized feature lists return HTTP 422.
+The endpoint validates that all 18 named features are present and numeric.
+Invalid JSON feature objects, missing fields, non-numeric values or an
+incorrect feature count return HTTP `422` with an explanatory error.
 
-## Data and modeling workflow
+## Docker deployment
 
-1. Download or provide the project dataset according to [`data/data.md`](data/data.md).
-2. Run [`notebooks/preprocessing/Uber_project.ipynb`](notebooks/preprocessing/Uber_project.ipynb) to clean the data and create engineered features.
-3. Use the notebooks in [`notebooks/modeling/`](notebooks/modeling/) to compare regression algorithms.
-4. The deployed artifacts are [`models/model.pkl`](models/model.pkl) and [`models/scaler.pkl`](models/scaler.pkl).
+The inference image contains the API, model artifacts and only the runtime
+dependencies. The published image is available at
+[`mu3mar/uber-price-prediction`](https://hub.docker.com/r/mu3mar/uber-price-prediction).
 
-The repository does not include the original private dataset. The public Kaggle dataset linked in `data/data.md` is a reference and may not reproduce the committed artifacts or metrics.
+Pull and run:
 
-## Technologies
+```bash
+docker pull mu3mar/uber-price-prediction:latest
+docker run --rm -p 5000:8000 \
+  --name uber-price-prediction \
+  mu3mar/uber-price-prediction:latest
+```
 
-Python, pandas, NumPy, scikit-learn, Jupyter, FastAPI, HTML, CSS and vanilla JavaScript.
+The API is then available at <http://127.0.0.1:5000>. The container listens on
+port `8000`, mapped to port `5000` on the host.
+
+Build locally:
+
+```bash
+docker build -t mu3mar/uber-price-prediction:latest .
+docker run --rm -p 5000:8000 \
+  --name uber-price-prediction \
+  mu3mar/uber-price-prediction:latest
+```
+
+## Reproduce the workflow
+
+1. Read the dataset notes in [`data/data.md`](data/data.md).
+2. Run [`notebooks/preprocessing/Uber_project.ipynb`](notebooks/preprocessing/Uber_project.ipynb).
+3. Run the six notebooks in [`notebooks/modeling/`](notebooks/modeling/) to
+   compare the regressors.
+4. Save the selected model and scaler to [`models/`](models/) before starting
+   the API.
+
+The original dataset is not redistributed. The Kaggle dataset linked in
+[`data/data.md`](data/data.md) is a similar public reference only and will not
+necessarily reproduce the committed model, split or metrics.
+
+## Technology stack
+
+Python · pandas · NumPy · scikit-learn · XGBoost · Jupyter · FastAPI · Uvicorn
+· HTML · CSS · Vanilla JavaScript · Docker
 
 ## Author
 
