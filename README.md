@@ -17,7 +17,9 @@ The feature order is kept identical to the training notebooks and the API. Date 
 ```text
 Uber-Price-Prediction/
 ├── README.md
-├── requirements.txt                    # API and model runtime dependencies
+├── Dockerfile                           # Docker image definition for the inference API
+├── requirements.txt                    # Full training, notebook and runtime dependencies
+├── requirements-runtime.txt            # Minimal dependencies for the inference/Docker image
 ├── data/
 │   └── data.md                         # Dataset notes and reference link
 ├── notebooks/
@@ -72,6 +74,52 @@ flask --app src.main run --debug --port 5000
 ```
 
 Run the command from the repository root. The API loads the artifacts from `models/`, so the source code, model files and frontend have clear separate responsibilities.
+
+For Docker or any inference-only environment, install the smaller runtime set
+instead:
+
+```bash
+pip install -r requirements-runtime.txt
+```
+
+The runtime file intentionally keeps `xgboost`: the committed `model.pkl` is an
+`XGBRegressor` and needs that package when it is loaded.
+
+## Dockerization
+
+The inference API is containerized using the [`Dockerfile`](Dockerfile). The
+image contains only the API source, trained model artifacts and the runtime
+dependencies from [`requirements-runtime.txt`](requirements-runtime.txt), so
+the training and notebook packages are not installed in the production image.
+
+### Docker image
+
+The published image is available on Docker Hub:
+
+**[mu3mar/uber-price-prediction](https://hub.docker.com/r/mu3mar/uber-price-prediction)**
+
+Pull and run the image:
+
+```bash
+docker pull mu3mar/uber-price-prediction:latest
+docker run --rm -p 5000:8000 \
+  --name uber-price-prediction \
+  mu3mar/uber-price-prediction:latest
+```
+
+The API is then available at <http://127.0.0.1:5000>. The container listens on
+port `8000`, which is mapped to port `5000` on the host.
+
+### Build the image locally
+
+From the repository root:
+
+```bash
+docker build -t mu3mar/uber-price-prediction:latest .
+docker run --rm -p 5000:8000 \
+  --name uber-price-prediction \
+  mu3mar/uber-price-prediction:latest
+```
 
 ### API endpoints
 

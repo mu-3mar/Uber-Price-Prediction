@@ -1,4 +1,11 @@
+# Runtime dependencies
 Flask
 numpy
 scikit-learn
 xgboost
+
+# Training, preprocessing and notebook dependencies
+pandas
+matplotlib
+seaborn
+jupyter

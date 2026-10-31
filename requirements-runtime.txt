@@ -1,0 +1,5 @@
+# Dependencies required to serve predictions with src/main.py.
+Flask
+numpy
+scikit-learn
+xgboost
