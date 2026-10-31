@@ -1,6 +1,6 @@
 # RideFare — Uber Fare Prediction
 
-An end-to-end machine-learning regression project that estimates an Uber ride fare from trip details, coordinates, distance and time. The project includes the preprocessing notebooks, several regression experiments, a Flask API, and a dependency-free browser interface.
+An end-to-end machine-learning regression project that estimates an Uber ride fare from trip details, coordinates, distance and time. The project includes the preprocessing notebooks, several regression experiments, a FastAPI prediction API, and a dependency-free browser interface.
 
 > **Scope:** This is an educational estimate, not an official Uber quote. Results depend on the dataset and trained model and may differ from a real fare.
 
@@ -18,8 +18,16 @@ The feature order is kept identical to the training notebooks and the API. Date 
 Uber-Price-Prediction/
 ├── README.md
 ├── Dockerfile                           # Docker image definition for the inference API
-├── requirements.txt                    # Full training, notebook and runtime dependencies
+├── requirements.txt                    # Pinned production/Vercel dependencies
 ├── requirements-runtime.txt            # Minimal dependencies for the inference/Docker image
+├── requirements-training.txt           # Runtime plus training and notebook dependencies
+├── .python-version                     # Vercel Python runtime version
+├── .vercelignore                       # Excludes training-only files from deployment
+├── public/                              # Static files served by Vercel's CDN
+│   ├── index.html                       # Static frontend entrypoint
+│   ├── app.js                           # Form, API connection and result rendering
+│   ├── styles.css                       # Existing visual design and colors
+│   └── logo-animated.html               # Project logo animation
 ├── data/
 │   └── data.md                         # Dataset notes and reference link
 ├── notebooks/
@@ -34,27 +42,22 @@ Uber-Price-Prediction/
 │       └── XGBoost Regressor.ipynb
 ├── src/
 │   ├── __init__.py
-│   └── main.py                         # Flask JSON API
+│   └── main.py                         # FastAPI JSON API
 ├── models/
 │   ├── model.pkl                       # Trained regression model
 │   └── scaler.pkl                      # Fitted feature scaler
-└── frontend/
-    ├── index.html                      # Independent static frontend
-    ├── app.js                          # Form, API connection and result rendering
-    ├── styles.css                      # Existing visual design and colors
-    └── logo-animated.html              # Project logo animation
 ```
 
 ## Run the frontend independently
 
-The frontend is static and does not require Flask, Streamlit, Node.js or any frontend build tool.
+The frontend is static and does not require FastAPI, Streamlit, Node.js or any frontend build tool.
 
 ```bash
-cd frontend
+cd public
 python3 -m http.server 5500
 ```
 
-Open <http://127.0.0.1:5500>. The form, randomize button and reset button work without a backend. Prediction requests are sent to `http://127.0.0.1:5000` when the API is available. You can point the page to another API without editing the files:
+Open <http://127.0.0.1:5500>. The form, randomize button and reset button work without a backend. Prediction requests use the same origin by default. You can point the page to another API without editing the files:
 
 ```text
 http://127.0.0.1:5500/?api=http://localhost:5000
@@ -62,32 +65,67 @@ http://127.0.0.1:5500/?api=http://localhost:5000
 
 The API status pill shows whether the configured backend can be reached.
 
-## Run the Flask API
+## Run the FastAPI API
 
 From the repository root:
 
 ```bash
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-flask --app src.main run --debug --port 5000
+uvicorn src.main:app --reload --port 5000
 ```
 
 Run the command from the repository root. The API loads the artifacts from `models/`, so the source code, model files and frontend have clear separate responsibilities.
 
-For Docker or any inference-only environment, install the smaller runtime set
-instead:
+For training and notebooks, install the extended set instead:
 
 ```bash
-pip install -r requirements-runtime.txt
+pip install -r requirements-training.txt
 ```
 
-The runtime file intentionally keeps `xgboost`: the committed `model.pkl` is an
+The runtime files intentionally keep `xgboost`: the committed `model.pkl` is an
 `XGBRegressor` and needs that package when it is loaded.
+
+## Vercel deployment
+
+The project is prepared for Vercel's native Python Runtime, not Docker. Vercel
+detects the `app` instance in [`src/main.py`](src/main.py), installs the pinned
+production dependencies from [`requirements.txt`](requirements.txt), and
+serves the top-level [`public/`](public/) directory through its CDN.
+
+No `vercel.json` is required: `src/main.py` is a supported FastAPI entrypoint,
+and [`.python-version`](.python-version) selects Python 3.12.
+
+Connect the repository to Vercel, or use the CLI:
+
+```bash
+npx vercel@latest
+npx vercel@latest --prod
+```
+
+The frontend calls `/` and `/predict` on the same deployment by default. For
+local development with a separately hosted API, use the existing `?api=...`
+query parameter.
+
+No Vercel environment variables are required. The deployed model artifacts are
+small enough to keep in the repository:
+
+| Artifact | Size |
+|---|---:|
+| `models/model.pkl` | approximately 476 KB |
+| `models/scaler.pkl` | approximately 4 KB |
+
+The serialized artifacts are trusted project files and are loaded with
+`pickle`; do not replace them with files from untrusted sources. The runtime
+dependencies are pinned to retain the known `scikit-learn` model version. The
+exact XGBoost training version was not recorded in the repository, so the
+deployment pin should be revisited if model-loading compatibility warnings
+persist.
 
 ## Dockerization
 
-The inference API is containerized using the [`Dockerfile`](Dockerfile). The
+Docker remains available for local compatibility using the [`Dockerfile`](Dockerfile). The
 image contains only the API source, trained model artifacts and the runtime
 dependencies from [`requirements-runtime.txt`](requirements-runtime.txt), so
 the training and notebook packages are not installed in the production image.
@@ -155,7 +193,7 @@ The repository does not include the original private dataset. The public Kaggle 
 
 ## Technologies
 
-Python, pandas, NumPy, scikit-learn, Jupyter, Flask, HTML, CSS and vanilla JavaScript.
+Python, pandas, NumPy, scikit-learn, XGBoost, FastAPI, Jupyter, HTML, CSS and vanilla JavaScript.
 
 ## Author
 
