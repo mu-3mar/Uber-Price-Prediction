@@ -16,9 +16,7 @@ and a standalone browser interface.
 Watch the project walkthrough to see the prediction interface and API in
 action:
 
-<!-- Drag and drop the demo video into this README on GitHub, then replace the
-     placeholder URL below with the generated video URL. -->
-<video src="VIDEO_URL" controls width="100%"></video>
+<video src="https://github.com/user-attachments/assets/0da0742c-3450-4061-b995-6c934f1a9142" controls width="100%"></video>
 
 ## What the project does
 
