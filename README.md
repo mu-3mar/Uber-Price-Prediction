@@ -11,6 +11,15 @@ and a standalone browser interface.
 > repository. Predictions therefore depend on the trained artifact and may
 > differ from a live commercial fare.
 
+## Demo
+
+Watch the project walkthrough to see the prediction interface and API in
+action:
+
+<!-- Drag and drop the demo video into this README on GitHub, then replace the
+     placeholder URL below with the generated video URL. -->
+<video src="VIDEO_URL" controls width="100%"></video>
+
 ## What the project does
 
 The target is `fare_amount`. The final inference pipeline expects these 18
