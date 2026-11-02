@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#FFF8F5">
   <title>RideFare — Uber Fare Predictor</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -30,32 +31,39 @@
         <div class="card-heading"><div><span class="step">01</span><h2>Trip details</h2></div><p>When and how many</p></div>
         <div class="field-grid">
           <label class="field"><span>Weather</span><select name="Weather" required><option value="0">Cloudy</option><option value="1">Rainy</option><option value="2">Stormy</option><option value="3">Sunny</option><option value="4">Windy</option></select></label>
-          <label class="field"><span>Passengers</span><input name="passenger_count" type="number" min="1" max="6" step="1" value="1" required><small>Number of passengers</small></label>
+          <label class="field"><span>Passengers</span><input name="passenger_count" type="number" min="1" max="6" step="1" inputmode="numeric" value="1" required><small>Whole number, from 1 to 6</small></label>
           <label class="field"><span>Pickup date</span><input id="date" type="date" required></label>
           <label class="field"><span>Pickup time</span><input id="time" type="time" required><small>Converted to hour for the model</small></label>
-          <label class="field"><span>Ride distance</span><input name="distance" type="number" min="0.1" step="0.1" value="3" required><small>Total distance in miles</small></label>
-          <label class="field"><span>Bearing</span><input name="bearing" type="number" min="-180" max="180" step="0.1" value="0" required><small>Direction from pickup to drop-off</small></label>
+          <label class="field"><span>Trip distance <b class="auto-badge">AUTO</b></span><input name="distance" type="number" min="0.1" step="0.1" inputmode="decimal" value="3" required readonly><small>Distance between your two map points · miles</small></label>
+          <label class="field"><span>Travel direction <b class="auto-badge">AUTO</b></span><input name="bearing" type="number" min="-180" max="180" step="0.1" inputmode="decimal" value="0" required readonly><small>Direction from pickup to drop-off · degrees</small></label>
         </div>
       </section>
 
       <section class="form-card">
-        <div class="card-heading"><div><span class="step">02</span><h2>Pickup & drop-off</h2></div><p>Coordinates</p></div>
+        <div class="card-heading"><div><span class="step">02</span><h2>Pickup & drop-off</h2></div><p>Choose on the map</p></div>
+        <div class="map-toolbar">
+          <p id="map-instructions">New York only · Click the map to set pickup, then click again for drop-off.</p>
+          <button type="button" class="reset-button" id="clear-map">Clear points</button>
+        </div>
+        <div id="trip-map" role="application" aria-label="Map for choosing pickup and drop-off points"></div>
+        <p class="map-status" id="map-status">Pickup: not selected · Drop-off: not selected</p>
         <div class="field-grid">
-          <label class="field"><span>Pickup longitude</span><input name="pickup_longitude" type="number" step="any" value="-73.985" required></label>
-          <label class="field"><span>Pickup latitude</span><input name="pickup_latitude" type="number" step="any" value="40.748" required></label>
-          <label class="field"><span>Drop-off longitude</span><input name="dropoff_longitude" type="number" step="any" value="-73.977" required></label>
-          <label class="field"><span>Drop-off latitude</span><input name="dropoff_latitude" type="number" step="any" value="40.752" required></label>
+          <label class="field"><span>Pickup longitude <b class="auto-badge">MAP</b></span><input name="pickup_longitude" type="number" min="-180" max="180" step="any" value="-73.985" required readonly></label>
+          <label class="field"><span>Pickup latitude <b class="auto-badge">MAP</b></span><input name="pickup_latitude" type="number" min="-90" max="90" step="any" value="40.748" required readonly></label>
+          <label class="field"><span>Drop-off longitude <b class="auto-badge">MAP</b></span><input name="dropoff_longitude" type="number" min="-180" max="180" step="any" value="-73.977" required readonly></label>
+          <label class="field"><span>Drop-off latitude <b class="auto-badge">MAP</b></span><input name="dropoff_latitude" type="number" min="-90" max="90" step="any" value="40.752" required readonly></label>
         </div>
       </section>
 
       <section class="form-card">
         <div class="card-heading"><div><span class="step">03</span><h2>Airport distances</h2></div><p>Nearest landmark distances</p></div>
+        <p class="section-help">These distances are calculated automatically from your pickup point.</p>
         <div class="field-grid">
-          <label class="field"><span>JFK distance</span><input name="jfk_dist" type="number" min="0" step="0.1" value="10" required><small>Miles</small></label>
-          <label class="field"><span>EWR distance</span><input name="ewr_dist" type="number" min="0" step="0.1" value="15" required><small>Miles</small></label>
-          <label class="field"><span>LGA distance</span><input name="lga_dist" type="number" min="0" step="0.1" value="8" required><small>Miles</small></label>
-          <label class="field"><span>SOL distance</span><input name="sol_dist" type="number" min="0" step="0.1" value="4" required><small>Miles</small></label>
-          <label class="field"><span>NYC distance</span><input name="nyc_dist" type="number" min="0" step="0.1" value="3" required><small>Miles</small></label>
+          <label class="field"><span>JFK distance</span><input name="jfk_dist" type="number" min="0" step="0.1" value="10" required readonly><small>Auto-calculated from pickup · Miles</small></label>
+          <label class="field"><span>EWR distance</span><input name="ewr_dist" type="number" min="0" step="0.1" value="15" required readonly><small>Auto-calculated from pickup · Miles</small></label>
+          <label class="field"><span>LGA distance</span><input name="lga_dist" type="number" min="0" step="0.1" value="8" required readonly><small>Auto-calculated from pickup · Miles</small></label>
+          <label class="field"><span>SOL distance</span><input name="sol_dist" type="number" min="0" step="0.1" value="4" required readonly><small>Auto-calculated from pickup · Miles</small></label>
+          <label class="field"><span>NYC distance</span><input name="nyc_dist" type="number" min="0" step="0.1" value="3" required readonly><small>Auto-calculated from pickup · Miles</small></label>
         </div>
       </section>
 
@@ -71,6 +79,7 @@
     </section>
     <footer><span class="footer-project">RIDEFARE · UBER FARE PREDICTION</span><span class="footer-credit">Designed & built by <strong>Muhammad Ammar</strong></span></footer>
   </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="app.js"></script>
 </body>
 </html>
